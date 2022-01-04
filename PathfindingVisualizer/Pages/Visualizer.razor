@@ -1,0 +1,111 @@
+@page "/visualizer"
+@using PathfindingVisualizer.Models
+@using PathfindingVisualizer.Components
+@using PathfindingVisualizer.Algorithms
+
+<h3>Visualizer</h3>
+
+@if (_grid != null)
+{
+    foreach (var row in _grid)
+    {
+        <div class="row">
+            @foreach (var node in row)
+            {
+                <div class="zoom-in">
+                    <NodeSquare OnClick="@(() => Toggle(node))" Node="node"></NodeSquare>
+                </div>
+            }
+        </div>
+    }
+    <hr/>
+    <button class="btn btn-primary" @onclick="Start">Start</button>
+    <button class="btn btn-primary" @onclick="OnInitialized">Reset</button>
+    
+}
+
+
+@code {
+        private const int Rows = 20;
+        private const int Columns = 35;
+
+    private bool _isStartSet;
+    private bool _isEndSet;
+
+    private Node[][] _grid;
+    private (int X, int Y) _start;
+    private (int X, int Y) _end;
+
+    protected override void OnInitialized()
+    {
+        _grid = new Node[Rows][];
+        for (var row = 0; row < Rows; row++)
+        {
+            _grid[row] = new Node[Columns];
+            for (var col = 0; col < Columns; col++)
+            {
+                _grid[row][col] = new Node
+                {
+                    Position = (col, row),
+                    State = NodeState.Empty
+                };
+                _grid[row][col].ObservedState += StateChanged;
+            }
+        }
+        
+        _start = (Columns / 3, Rows / 2);
+        _grid[_start.Y][_start.X].State = NodeState.Start;
+        _isStartSet = true;
+        
+        _end = (Columns / 3 * 2, Rows / 2);
+        _grid[_end.Y][_end.X].State = NodeState.End;
+        _isEndSet = true;
+    }
+    
+    private void StateChanged(NodeState newState)
+    {
+        Task.Run(async() => await InvokeAsync(StateHasChanged));
+    }
+
+    private async Task Start()
+    {
+        AStar algorithm = new()
+        {
+            Grid = _grid
+        };
+
+        var path = await algorithm.FindPathAsync(
+            _grid[_start.Y][_start.X],
+            _grid[_end.Y][_end.X]
+            );
+    }
+    
+    private void Toggle(Node node)
+    {
+        if (!_isStartSet)
+        {
+            _isStartSet = node.SetStart();
+            _start = node.Position;
+            return;
+        }
+        
+        if (!_isEndSet)
+        {
+            _isEndSet =  node.SetEnd();
+            _end = node.Position;
+            return;
+        }
+
+        switch (node.State)
+        {
+            case NodeState.Start:
+                _isStartSet = false;
+                break;
+            case NodeState.End:
+                _isEndSet = false;
+                break;
+        }
+        node.Toggle();
+    }
+
+}
