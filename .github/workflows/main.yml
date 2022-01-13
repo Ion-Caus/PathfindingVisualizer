@@ -13,14 +13,15 @@ jobs:
     steps:
     # uses GitHub's checkout action to checkout code form the master branch
     - uses: actions/checkout@v2
-     # sets up .NET Core SDK 3.1
+     # sets up .NET SDK 5.0.x
     - name: Setup .NET SDK
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: 5.0.9
+        dotnet-version: '5.0.x'
+    - run: dotnet build
       # publishes Blazor project to the release-folder
     - name: Publish .NET Project
-      run: dotnet publish BlazorGitHubPagesDemo.csproj -c Release -o release --nologo
+      run: dotnet publish PathfindingVisualizer.csproj -c Release -o release --nologo
       
     - name: Commit wwwroot to GitHub Pages
       uses: JamesIves/github-pages-deploy-action@3.7.1
