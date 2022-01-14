@@ -1,26 +1,51 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns="http://www.w3.org/1999/html">
 
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
     <title>PathfindingVisualizer</title>
-    <base href="/" />
-    <link href="css/bootstrap/bootstrap.min.css" rel="stylesheet" />
-    <link href="css/app.css" rel="stylesheet" />
-    <link href="PathfindingVisualizer.styles.css" rel="stylesheet" />
+    <base href="/"/>
+    <link href="css/bootstrap/bootstrap.min.css" rel="stylesheet"/>
+    <link href="css/app.css" rel="stylesheet"/>
+    <link href="PathfindingVisualizer.styles.css" rel="stylesheet"/>
+    
+    <link href="css/loader.css" rel="stylesheet"/>
+    <style>
+        
+    </style>
 </head>
 
 <body>
-    <div id="app">Loading...</div>
 
-    <div id="blazor-error-ui">
-        An unhandled error has occurred.
-        <a href="" class="reload">Reload</a>
-        <a class="dismiss">🗙</a>
+<div id="app">
+    <div class="container">
+        <div class="loader">
+            <div class="cell animate d-0"></div>
+            <div class="cell animate d-1"></div>
+            <div class="cell"></div>
+            <div class="cell"></div>
+            <div class="cell"></div>
+            <div class="cell animate d-2"></div>
+            <div class="cell"></div>
+            <div class="cell"></div>
+            <div class="cell"></div>
+            <div class="cell animate d-3"></div>
+            <div class="cell animate d-4"></div>
+            <div class="cell animate d-5"></div>
+            <div class="cell"></div>
+            <div class="cell"></div>
+            <div class="cell"></div>
+            <div class="cell"></div>
+        </div>
     </div>
-    <script src="_framework/blazor.webassembly.js"></script>
-    <script src="_content/BlazorAnimate/blazorAnimateInterop.js"></script>
+</div>
+<div id="blazor-error-ui">
+    An unhandled error has occurred.
+    <a href="" class="reload">Reload</a>
+    <a class="dismiss">🗙</a>
+</div>
+<script src="_framework/blazor.webassembly.js"></script>
 </body>
 
 </html>

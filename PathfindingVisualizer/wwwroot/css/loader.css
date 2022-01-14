@@ -1,0 +1,69 @@
+.loader {
+    display: grid;
+    grid-template-columns: 30px 30px 30px 30px;
+    grid-template-rows: 30px 30px 30px 30px;
+    gap: 1px 1px;
+    grid-template-areas: 
+                    ". . . ."
+                    ". . . ."
+                    ". . . ."
+                    ". . . .";
+}
+
+.container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin-top: -50px;
+    margin-left: -50px;
+    width: 100px;
+    height: 100px;
+}
+
+.loader > .cell {
+    width: 30px;
+    height: 30px;
+    outline: 1px solid #f8edeb;
+    
+}
+
+.loader > .animate {
+    animation: 500ms path-finding ease infinite;
+}
+
+
+.loader > .cell.d-1 {
+    animation-delay: 50ms;
+}
+
+.loader > .cell.d-2 {
+    animation-delay: 100ms;
+}
+
+.loader > .cell.d-3 {
+    animation-delay: 150ms;
+}
+
+.loader > .cell.d-4 {
+    animation-delay: 200ms;
+}
+
+.loader > .cell.d-5 {
+    animation-delay: 250ms;
+}
+
+
+@keyframes path-finding {
+    0% {
+        background-color: white;
+    }
+    30% {
+        background-color: #219ebc;
+    }
+    60% {
+        background-color: #219ebc;
+    }
+    100% {
+        background-color: #219ebc;
+    }
+}
