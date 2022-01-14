@@ -7,13 +7,79 @@
 
 @inject IJSRuntime _jsRuntime
 
-<h3>Visualizer</h3>
+<style>
+    .small-square {
+        width: 25px;
+        height: 25px;
+        outline: 1px solid #e2eafc;
+    }
+    
+        .state-Empty {
+            background: #fff;
+        }
+        
+        .state-Wall {
+            background: #023047;
+        }
+        
+        .state-Start {
+            background: #90be6d;
+        }
+        
+        .state-End {
+            background: #e63946;
+        }
+        
+        .state-Path {
+            background: #219ebc;
+        }
+        
+        .state-Open {
+            background: #ffc300;
+        }
+        
+        .state-Closed {
+            background: #ff9b54;
+        }
+</style>
+
+    <div class="d-flex flex-row justify-content-around flex-wrap mt-1 mb-2">
+            <div class="row m-1">
+                <div class="small-square state-Start"></div>
+                <p class="text-center align-self-center ml-3">Start Node</p>
+            </div>
+            <div class="row m-1">
+               <div class="small-square state-End"></div>
+                <p class="text-center align-self-center ml-3">End Node</p>
+            </div>
+            <div class="row m-1">
+                <div class="small-square state-Wall"></div>
+                <p class="text-center align-self-center ml-3">Wall Node</p>
+            </div>
+            <div class="row m-1">
+                <div class="small-square state-Empty"></div>
+                <p class="text-center align-self-center ml-3">Empty Node</p>
+            </div>
+            <div class="row m-1">
+                <div class="small-square state-Open"></div>
+                <p class="text-center align-self-center ml-3">Open Node</p>
+            </div>
+            <div class="row m-1">
+                <div class="small-square state-Closed"></div>
+                <p class="text-center align-self-center ml-3">Visited Node</p>
+            </div>
+            <div class="row m-1">
+                <div class="small-square state-Path"></div>
+                <p class="text-center align-self-center ml-3">Shortest Path</p>
+            </div>
+        </div>
+
 
 @if (_grid != null)
 {
     foreach (var row in _grid)
     {
-        <div class="row">
+        <div class="row justify-content-center">
             @foreach (var node in row)
             {
                 <div class="zoom-in">
@@ -22,19 +88,30 @@
             }
         </div>
     }
-    <hr/>
-    <button class="btn btn-primary" @onclick="Start">Start</button>
-    <button class="btn btn-primary" @onclick="SetUpGrid">Reset</button>
-    
 }
+
+<div class="card mt-3">
+    <div class="card-body">
+        <button class="btn btn-primary" @onclick="Start">Start</button>
+        <button class="btn btn-primary" @onclick="SetUpGrid">Reset</button>
+        <select @bind="_stepDelay" class="custom-select col-2">
+            <option value="1">Fast</option>
+            <option selected value="75">Normal</option>
+            <option value="200">Slow</option>
+        </select>
+        <button class="btn btn-primary" @onclick="ClearPath">Clear Path</button>
+    </div>
+</div>
 
 
 @code {
-        private int _rows = 20;
-        private int _columns = 35;
+    private int _rows = 20;
+    private int _columns = 35;
 
     private bool _isStartSet;
     private bool _isEndSet;
+
+    private int _stepDelay = 75;
 
     private Node[][] _grid;
     private (int X, int Y) _start;
@@ -44,7 +121,7 @@
     {
         var dimensions = await _jsRuntime.InvokeAsync<WindowDimensions>("getDimensions");
         _rows = (dimensions.Height - 200) / 35;
-        _columns = (dimensions.Width - 100 ) / 35;
+        _columns = (dimensions.Width - 100) / 35;
 
         SetUpGrid();
     }
@@ -65,26 +142,58 @@
                 _grid[row][col].ObservedState += StateChanged;
             }
         }
-        
+
         _start = (_columns / 3, _rows / 2);
         _grid[_start.Y][_start.X].State = NodeState.Start;
         _isStartSet = true;
-        
+
         _end = (_columns / 3 * 2, _rows / 2);
         _grid[_end.Y][_end.X].State = NodeState.End;
         _isEndSet = true;
     }
-    
+
+    private void ClearPath()
+    {
+        Node[][] newGrid = new Node[_rows][];
+        for (var row = 0; row < _rows; row++)
+        {
+            newGrid[row] = new Node[_columns];
+            for (var col = 0; col < _columns; col++)
+            {
+                NodeState newState;
+                switch (_grid[row][col].State)
+                {
+                    case NodeState.Wall:
+                    case NodeState.Start:
+                    case NodeState.End:
+                        newState = _grid[row][col].State;
+                        break;
+                    default:
+                        newState = NodeState.Empty;
+                        break;
+                }
+                newGrid[row][col] = new Node
+                {
+                    Position = (col, row),
+                    State = newState
+                };
+                newGrid[row][col].ObservedState += StateChanged;
+            }
+        }
+        _grid = newGrid;
+    }
+
     private void StateChanged(NodeState newState)
     {
-        Task.Run(async() => await InvokeAsync(StateHasChanged));
+        Task.Run(async () => await InvokeAsync(StateHasChanged));
     }
 
     private async Task Start()
     {
         AStar algorithm = new()
         {
-            Grid = _grid
+            Grid = _grid,
+            Delay = _stepDelay
         };
 
         var path = await algorithm.FindPathAsync(
@@ -92,7 +201,7 @@
             _grid[_end.Y][_end.X]
             );
     }
-    
+
     private void Toggle(Node node)
     {
         if (!_isStartSet)
@@ -101,10 +210,10 @@
             _start = node.Position;
             return;
         }
-        
+
         if (!_isEndSet)
         {
-            _isEndSet =  node.SetEnd();
+            _isEndSet = node.SetEnd();
             _end = node.Position;
             return;
         }
