@@ -8,6 +8,8 @@ namespace PathfindingVisualizer.Algorithms
 {
     public class AStar
     {
+        public int Delay { get; set; } = 50;
+        
         public Node[][] Grid { get; set; }
         public int GridRows => Grid[0].Length;
 
@@ -50,7 +52,7 @@ namespace PathfindingVisualizer.Algorithms
                             
                             ChangeNodeState(n, NodeState.Open);
                             openList.Add(n);
-                            await Task.Delay(50);
+                            await Task.Delay(Delay);
                         }
                     }
                 }
@@ -71,7 +73,7 @@ namespace PathfindingVisualizer.Algorithms
             {
                 path.Push(temp);
                 ChangeNodeState(temp, NodeState.Path);
-                await Task.Delay(50);
+                await Task.Delay(Delay);
                 temp = temp.Parent;
             } while (temp != null && temp.Position != start.Position);
             
