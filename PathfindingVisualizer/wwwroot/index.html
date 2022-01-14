@@ -11,41 +11,47 @@
     <link href="PathfindingVisualizer.styles.css" rel="stylesheet"/>
     
     <link href="css/loader.css" rel="stylesheet"/>
-    <style>
-        
-    </style>
 </head>
 
 <body>
-
-<div id="app">
-    <div class="container">
-        <div class="loader">
-            <div class="cell animate d-0"></div>
-            <div class="cell animate d-1"></div>
-            <div class="cell"></div>
-            <div class="cell"></div>
-            <div class="cell"></div>
-            <div class="cell animate d-2"></div>
-            <div class="cell"></div>
-            <div class="cell"></div>
-            <div class="cell"></div>
-            <div class="cell animate d-3"></div>
-            <div class="cell animate d-4"></div>
-            <div class="cell animate d-5"></div>
-            <div class="cell"></div>
-            <div class="cell"></div>
-            <div class="cell"></div>
-            <div class="cell"></div>
+    <div id="app">
+        <div class="container">
+            <div class="loader">
+                <div class="cell animate d-0"></div>
+                <div class="cell animate d-1"></div>
+                <div class="cell"></div>
+                <div class="cell"></div>
+                <div class="cell"></div>
+                <div class="cell animate d-2"></div>
+                <div class="cell"></div>
+                <div class="cell"></div>
+                <div class="cell"></div>
+                <div class="cell animate d-3"></div>
+                <div class="cell animate d-4"></div>
+                <div class="cell animate d-5"></div>
+                <div class="cell"></div>
+                <div class="cell"></div>
+                <div class="cell"></div>
+                <div class="cell"></div>
+            </div>
         </div>
     </div>
-</div>
-<div id="blazor-error-ui">
-    An unhandled error has occurred.
-    <a href="" class="reload">Reload</a>
-    <a class="dismiss">🗙</a>
-</div>
-<script src="_framework/blazor.webassembly.js"></script>
+    <div id="blazor-error-ui">
+        An unhandled error has occurred.
+        <a href="" class="reload">Reload</a>
+        <a class="dismiss">x</a>
+    </div>
+    
+    <script src="_framework/blazor.webassembly.js"></script>
+    
+    <script type="text/javascript">
+        window.getDimensions = function() {
+            return {
+                width: window.innerWidth,
+                height: window.innerHeight
+            };
+        };
+    </script>
 </body>
 
 </html>

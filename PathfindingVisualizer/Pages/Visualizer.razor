@@ -1,8 +1,11 @@
 @page "/"
 @page "/visualizer"
+
 @using PathfindingVisualizer.Models
 @using PathfindingVisualizer.Components
 @using PathfindingVisualizer.Algorithms
+
+@inject IJSRuntime _jsRuntime
 
 <h3>Visualizer</h3>
 
@@ -21,14 +24,14 @@
     }
     <hr/>
     <button class="btn btn-primary" @onclick="Start">Start</button>
-    <button class="btn btn-primary" @onclick="OnInitialized">Reset</button>
+    <button class="btn btn-primary" @onclick="SetUpGrid">Reset</button>
     
 }
 
 
 @code {
-        private const int Rows = 20;
-        private const int Columns = 35;
+        private int _rows = 20;
+        private int _columns = 35;
 
     private bool _isStartSet;
     private bool _isEndSet;
@@ -37,13 +40,22 @@
     private (int X, int Y) _start;
     private (int X, int Y) _end;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        _grid = new Node[Rows][];
-        for (var row = 0; row < Rows; row++)
+        var dimensions = await _jsRuntime.InvokeAsync<WindowDimensions>("getDimensions");
+        _rows = (dimensions.Height - 200) / 35;
+        _columns = (dimensions.Width - 100 ) / 35;
+
+        SetUpGrid();
+    }
+
+    private void SetUpGrid()
+    {
+        _grid = new Node[_rows][];
+        for (var row = 0; row < _rows; row++)
         {
-            _grid[row] = new Node[Columns];
-            for (var col = 0; col < Columns; col++)
+            _grid[row] = new Node[_columns];
+            for (var col = 0; col < _columns; col++)
             {
                 _grid[row][col] = new Node
                 {
@@ -54,11 +66,11 @@
             }
         }
         
-        _start = (Columns / 3, Rows / 2);
+        _start = (_columns / 3, _rows / 2);
         _grid[_start.Y][_start.X].State = NodeState.Start;
         _isStartSet = true;
         
-        _end = (Columns / 3 * 2, Rows / 2);
+        _end = (_columns / 3 * 2, _rows / 2);
         _grid[_end.Y][_end.X].State = NodeState.End;
         _isEndSet = true;
     }
