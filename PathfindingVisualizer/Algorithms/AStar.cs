@@ -1,119 +1,85 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using PathfindingVisualizer.Models;
 
-namespace PathfindingVisualizer.Algorithms
+namespace PathfindingVisualizer.Algorithms;
+
+public class AStar : IPathfinder
 {
-    public class AStar
+    private Grid Grid { get; }
+    public bool IncludePathIntoSteps { get; set; } = true;
+    public Queue<Node> Steps { get; }   // Used for visualizing the steps of the algorithm 
+    public AStar(Grid grid) // use a copy
     {
-        public int Delay { get; set; } = 50;
-        
-        public Node[][] Grid { get; set; }
-        public int GridRows => Grid[0].Length;
+        Grid = grid.Clone();
+        Steps = new Queue<Node>();
+    }
+    
+    public Stack<Node> FindPath(Node start, Node end)
+    {
+        var openList = new List<Node>();
+        var closedList = new List<Node>();
 
-        public int GridCols => Grid.Length;
+        var current = start;
         
+        openList.Add(current);
+        Steps.Enqueue(current.Clone(NodeState.Open));
 
-        public async Task<Stack<Node>> FindPathAsync(Node start, Node end)
+        while (openList.Any() && closedList.All(n => n.Position != end.Position))
         {
-            Stack<Node> path = new Stack<Node>();
-            List<Node> openList = new List<Node>();
-            List<Node> closedList = new List<Node>();
-            List<Node> adjacencies;
-            Node current = start;
+            current = openList.First();
 
-            // add start node to Open List
-            openList.Add(start);
+            openList.Remove(current);
+            closedList.Add(current);
+            Steps.Enqueue(current.Clone(NodeState.Closed)); 
 
-            while (openList.Count != 0 &&
-                   !closedList.Exists(node => node.Position == end.Position))
+            var adjacentNodes = GetAdjacentNodes(current);
+
+            foreach (var n in adjacentNodes)
             {
-                current = openList[0];
-                openList.Remove(current);
-                closedList.Add(current);
-                ChangeNodeState(current, NodeState.Closed);
+                if (!n.IsWalkable) continue;
                 
-                adjacencies = GetAdjacentNodes(current);
+                if (closedList.Contains(n)
+                    || openList.Contains(n)) continue;
 
-
-                foreach (Node n in adjacencies)
-                {
-
-                    if (!closedList.Contains(n) && n.IsWalkable)
-                    {
-                        if (!openList.Contains(n))
-                        {
-                            n.Parent = current;
-                            n.DistanceToTarget = Math.Abs(n.Position.X - end.Position.X) +
-                                                 Math.Abs(n.Position.Y - end.Position.Y);
-                            n.Cost = n.Weight + n.Parent.Cost;
-                            
-                            ChangeNodeState(n, NodeState.Open);
-                            openList.Add(n);
-                            await Task.Delay(Delay);
-                        }
-                    }
-                }
-
-                openList = openList.OrderBy(node => node.F).ToList();
+                n.Parent = current;
+                n.DistanceToTarget = Math.Abs(n.Position.Row - end.Position.Row) +
+                                     Math.Abs(n.Position.Col - end.Position.Col);
+                n.Cost = n.Weight + n.Parent.Cost;
+                
+                openList.Add(n);
+                Steps.Enqueue(n.Clone(NodeState.Open));
             }
 
-            // construct path, if end was not closed return null
-            if (!closedList.Exists(node => node.Position == end.Position))
-            {
-                return null;
-            }
-
-            // if all good, return path
-            Node temp = closedList[closedList.IndexOf(current)];
-            if (temp == null) return null;
-            do
-            {
-                path.Push(temp);
-                ChangeNodeState(temp, NodeState.Path);
-                await Task.Delay(Delay);
-                temp = temp.Parent;
-            } while (temp != null && temp.Position != start.Position);
-            
-            return path;
+            openList = openList.OrderBy(n => n.CostDistance).ToList();
         }
 
-        private List<Node> GetAdjacentNodes(Node n)
+        var path = new Stack<Node>();
+        if (closedList.All(n => n.Position != end.Position)) return path;
+
+        var temp = current;
+        do
         {
-            List<Node> temp = new List<Node>();
-
-            int row = n.Position.X;
-            int col = n.Position.Y;
-
-            if (row + 1 < GridRows)
-            {
-                temp.Add(Grid[col][row + 1]);
-            }
-
-            if (row - 1 >= 0)
-            {
-                temp.Add(Grid[col][row - 1]);
-            }
-
-            if (col - 1 >= 0)
-            {
-                temp.Add(Grid[col - 1][row]);
-            }
-
-            if (col + 1 < GridCols)
-            {
-                temp.Add(Grid[col + 1][row]);
-            }
-
-            return temp;
-        }
-        
-        private void ChangeNodeState(Node n, NodeState newState) {
-            if (n.State is NodeState.End or NodeState.Start) return;
+            path.Push(temp);
+            if (IncludePathIntoSteps) Steps.Enqueue(temp.Clone(NodeState.Path));
             
-            Grid[n.Position.Y][n.Position.X].State = newState;
-        }
+            temp = temp.Parent;
+        } while (temp is not null && temp.Position != start.Position);
+
+        return path;
+    }
+
+    private IEnumerable<Node> GetAdjacentNodes(Node node)
+    {
+        var row = node.Position.Row;
+        var col = node.Position.Col;
+
+        var adjacentNodes = new List<Node>();
+
+        if (row > 0) adjacentNodes.Add(Grid[row - 1][col]);
+        if (col > 0) adjacentNodes.Add(Grid[row][col - 1]);
+        
+        if (row + 1 < Grid.RowSize) adjacentNodes.Add(Grid[row + 1][col]);
+        if (col + 1 < Grid.ColumnSize) adjacentNodes.Add(Grid[row][col + 1]);
+
+        return adjacentNodes;
     }
 }

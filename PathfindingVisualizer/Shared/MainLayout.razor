@@ -1,14 +1,29 @@
-@inherits LayoutComponentBase
+﻿@inherits LayoutComponentBase
 
-<div class="page">
-    <div class="main">
-        <div class="top-row px-4">
-            <h3>Pathfinding Visualizer</h3>
-            <a href="/about" target="" class="ml-md-auto">About</a>
-        </div>
+<MudThemeProvider Theme="_theme"/>.
+<MudDialogProvider />
+<MudSnackbarProvider />
 
-        <div class="content px-4">
+<MudLayout>
+    <MudAppBar Elevation="1" Dense="true">
+        <MudText Typo="Typo.h5" Class="ml-3">Pathfinding Visualizer</MudText>
+    </MudAppBar>
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="my-2">
             @Body
-        </div>
-    </div>
-</div>
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
+
+@code {
+
+    private readonly MudTheme _theme = new()
+    {
+        Palette = new Palette
+        {
+            Primary = "#122b47",
+            AppbarBackground = "#122b4f"
+        }
+    };
+
+}

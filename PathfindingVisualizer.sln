@@ -1,6 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PathfindingVisualizer", "PathfindingVisualizer\PathfindingVisualizer.csproj", "{C3E47256-41F2-4371-9A55-380CB78B3FCE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PathfindingVisualizerOld", "PathfindingVisualizerOld\PathfindingVisualizerOld.csproj", "{C3E47256-41F2-4371-9A55-380CB78B3FCE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PathfindingVisualizer", "PathfindingVisualizer\PathfindingVisualizer.csproj", "{774A464B-D905-431B-AF8B-3E2950124294}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -12,5 +14,9 @@ Global
 		{C3E47256-41F2-4371-9A55-380CB78B3FCE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C3E47256-41F2-4371-9A55-380CB78B3FCE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C3E47256-41F2-4371-9A55-380CB78B3FCE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{774A464B-D905-431B-AF8B-3E2950124294}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{774A464B-D905-431B-AF8B-3E2950124294}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{774A464B-D905-431B-AF8B-3E2950124294}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{774A464B-D905-431B-AF8B-3E2950124294}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

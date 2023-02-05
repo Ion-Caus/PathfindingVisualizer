@@ -1,87 +1,42 @@
-using System;
+namespace PathfindingVisualizer.Models;
 
-namespace PathfindingVisualizer.Models
+public class Node
 {
-    public class Node
+    private const int DefaultWeight = 1;
+    private const int DefaultCost = 1;
+    private const int DefaultDistanceToTarget = -1;
+    
+    public (int Row, int Col) Position { get; }
+    public NodeState State { get; set; } = NodeState.Empty;
+
+    public Node? Parent { set; get; }
+    public int DistanceToTarget { get; set; } = DefaultDistanceToTarget;
+    public int Cost { get; set; } = DefaultCost;
+    public int CostDistance => DistanceToTarget + Cost;
+    public int Weight { get; set; } = DefaultWeight;
+
+    public bool IsWalkable => State is NodeState.Empty or NodeState.End;
+
+    public Node(int row, int col)
     {
-        public (int X, int Y) Position { get; set; }
-        
-        public Action<NodeState> ObservedState;
+        Position = (row, col);
+    }
 
-        private NodeState _state;
-        public NodeState State
+    public Node Clone(NodeState? state = null) =>
+        new(Position.Row, Position.Col)
         {
-            get => _state;
-            set
-            {
-                _state = value;
-                ObservedState?.Invoke(value);
-            }
-        }
+            State = state ?? State,
+            Parent = Parent,
+            DistanceToTarget = DistanceToTarget,
+            Cost = Cost,
+            Weight = Weight
+        };
 
-        public bool IsWalkable => State is NodeState.Empty or NodeState.End or NodeState.Path;
-        
-        public int DistanceToTarget { get; set; }
-        public int Cost { get; set; }
-        public int Weight { get; set; } = 1;
-        
-        public int F
-        {
-            get
-            {
-                if (DistanceToTarget != -1 && Cost != -1)
-                    return DistanceToTarget + Cost;
-                
-                return -1;
-            }
-        }
-        public Node Parent { set; get; }
-
-        public bool SetStart()
-        {
-            switch (State)
-            {
-                case NodeState.Empty:
-                case NodeState.Wall:
-                    State = NodeState.Start;
-                    return true;
-                
-                case NodeState.Start:
-                    return false;
-                case NodeState.End:
-                    return false;
-                default:
-                    return false;
-            }
-        }
-        
-        public bool SetEnd()
-        {
-            switch (State)
-            {
-                case NodeState.Empty:
-                case NodeState.Wall:
-                    State = NodeState.End;
-                    return true;
-                
-                case NodeState.Start:
-                    return false;
-                case NodeState.End:
-                    return false;
-                default:
-                    return false;
-            }
-        }
-        public void Toggle()
-        {
-            State = State switch
-            {
-                NodeState.Empty => NodeState.Wall,
-                NodeState.Wall => NodeState.Empty,
-                NodeState.Start => NodeState.Empty,
-                NodeState.End => NodeState.Empty,
-                _ => State
-            };
-        }
+    public void Reset()
+    {
+        Cost = DefaultCost;
+        DistanceToTarget = DefaultDistanceToTarget;
+        Weight = DefaultWeight;
+        Parent = null;
     }
 }
