@@ -1,233 +1,228 @@
-@page "/"
+﻿@page "/"
 @page "/visualizer"
-
 @using PathfindingVisualizer.Models
-@using PathfindingVisualizer.Components
 @using PathfindingVisualizer.Algorithms
 
 @inject IJSRuntime _jsRuntime
 
-<style>
-    .small-square {
-        width: 25px;
-        height: 25px;
-        outline: 1px solid #e2eafc;
-    }
-    
-        .state-Empty {
-            background: #fff;
-        }
-        
-        .state-Wall {
-            background: #023047;
-        }
-        
-        .state-Start {
-            background: #90be6d;
-        }
-        
-        .state-End {
-            background: #e63946;
-        }
-        
-        .state-Path {
-            background: #219ebc;
-        }
-        
-        .state-Open {
-            background: #ffc300;
-        }
-        
-        .state-Closed {
-            background: #ff9b54;
-        }
-</style>
+<PageTitle>Visualizer</PageTitle>
 
-    <div class="d-flex flex-row justify-content-around flex-wrap mt-1 mb-2">
-            <div class="row m-1">
-                <div class="small-square state-Start"></div>
-                <p class="text-center align-self-center ml-3">Start Node</p>
-            </div>
-            <div class="row m-1">
-               <div class="small-square state-End"></div>
-                <p class="text-center align-self-center ml-3">End Node</p>
-            </div>
-            <div class="row m-1">
-                <div class="small-square state-Wall"></div>
-                <p class="text-center align-self-center ml-3">Wall Node</p>
-            </div>
-            <div class="row m-1">
-                <div class="small-square state-Empty"></div>
-                <p class="text-center align-self-center ml-3">Empty Node</p>
-            </div>
-            <div class="row m-1">
-                <div class="small-square state-Open"></div>
-                <p class="text-center align-self-center ml-3">Open Node</p>
-            </div>
-            <div class="row m-1">
-                <div class="small-square state-Closed"></div>
-                <p class="text-center align-self-center ml-3">Visited Node</p>
-            </div>
-            <div class="row m-1">
-                <div class="small-square state-Path"></div>
-                <p class="text-center align-self-center ml-3">Shortest Path</p>
-            </div>
-        </div>
-
-
-@if (_grid != null)
-{
-    foreach (var row in _grid)
+<div class="d-flex flex-column gap-4 justify-center @(_isRunning ? "cursor-wait" : string.Empty)">
+    @if (NodeStates.Any())
     {
-        <div class="row justify-content-center">
-            @foreach (var node in row)
+        <MudPaper Class="d-flex flex-row flex-wrap justify-center gap-4 pa-4" Elevation="0">
+            @foreach (var (state, name) in NodeStates)
             {
-                <div class="zoom-in">
-                    <NodeSquare OnClick="@(() => Toggle(node))" Node="node"></NodeSquare>
+                <div class="d-flex flex-row align-content-center gap-2">
+                    <div class="node-state" style="@NodeStyleFunc(state)"></div>
+                    <MudText Typo="Typo.button">@name</MudText>
+                </div>
+
+            }
+        </MudPaper>
+    }
+
+    @if (_grid is not null)
+    {
+        <MudPaper Class="d-flex flex-column pa-2 disable-selection" Style="-webkit-user-select: none; user-select: none;">
+            @foreach (var row in _grid.Rows)
+            {
+                <div class="d-flex flex-row justify-center">
+                    @foreach (var node in row)
+                    {
+                            @* TODO: Add EventUtil.AsNonRenderingEventHandler<MouseEventArgs>  *@
+                        <div class="node d-flex flex-column" style="@NodeStyleFunc(node.State)"
+                             @onmousedown="() => OnMouseDown(node)"
+                             @onmouseenter="() => OnMouseEnter(node)"
+                             @onmouseup="OnMouseUp">
+                            
+                            @if (_debugMode)
+                            {
+                                <p style="font-size: xx-small; color: red;">@node.CostDistance</p>
+                                <p style="font-size: xx-small; color: green;">@node.DistanceToTarget</p>
+                            }
+                            
+                        </div>
+                    }
                 </div>
             }
-        </div>
+        </MudPaper>
     }
-}
-
-<div class="card mt-3">
-    <div class="card-body">
-        <button class="btn btn-primary" @onclick="Start">Start</button>
-        <button class="btn btn-primary" @onclick="SetUpGrid">Reset</button>
-        <select @bind="_stepDelay" class="custom-select col-2">
-            <option value="1">Fast</option>
-            <option selected value="75">Normal</option>
-            <option value="200">Slow</option>
-        </select>
-        <button class="btn btn-primary" @onclick="ClearPath">Clear Path</button>
-    </div>
+    
+    <MudPaper Class="d-flex flex-row flex-wrap justify-center align-center gap-8 pa-4" Elevation="0" Outlined="true">
+        
+        <MudButton Variant="Variant.Text" Color="Color.Primary">Algorithm</MudButton>
+        <MudButton @onclick="Visualize" Variant="Variant.Filled" Color="Color.Primary">Visualize</MudButton>
+        <MudButton @onclick="Clear" Variant="Variant.Text" Color="Color.Primary">Clear</MudButton>
+        
+         <MudPaper MaxWidth="200px" Elevation="0">
+             <MudSlider  @bind-Value="_magic" Min="1" Max="21" Step="10" Color="Color.Info">Speed: @_magic</MudSlider>
+        </MudPaper>
+        
+        <MudPaper MaxWidth="150px" Elevation="0">
+            <MudSelect Margin="Margin.Dense" @bind-Value="_delayMilliseconds" Label="Speed" Variant="Variant.Outlined">
+                <MudSelectItem Value="@DelaySpeed.Instant">@DelaySpeed.Instant</MudSelectItem>
+                <MudSelectItem Value="@DelaySpeed.Fast">@DelaySpeed.Fast</MudSelectItem>
+                <MudSelectItem Value="@DelaySpeed.Average">@DelaySpeed.Average</MudSelectItem>
+                <MudSelectItem Value="@DelaySpeed.Slow">@DelaySpeed.Slow</MudSelectItem>
+            </MudSelect>
+        </MudPaper>
+        
+        
+        <MudToggleIconButton @bind-Toggled="@_clearWalls"
+                             Variant="Variant.Filled" Size="Size.Medium" ToggledSize="Size.Medium" Edge="Edge.False"
+                             Icon="@Icons.Material.Filled.AppRegistration" Color="@Color.Primary" Title="Place Walls"
+                             ToggledIcon="@Icons.Material.Filled.CleaningServices" ToggledColor="@Color.Error" ToggledTitle="Clear Walls"/>
+        
+         <MudToggleIconButton @bind-Toggled="@_debugMode"
+                                     Variant="Variant.Text" Size="Size.Medium" ToggledSize="Size.Medium" Edge="Edge.False"
+                                     Icon="@Icons.Material.Outlined.Info"  Title="Turn off Debug Mode"
+                                     ToggledIcon="@Icons.Material.Filled.Info" ToggledTitle="Turn on Debug Mode"/>
+    </MudPaper>
 </div>
 
 
-@code {
-    private int _rows = 20;
-    private int _columns = 35;
+@code
+{
+        private const int MarginXPixels = 20;
+        private const int MarginYPixels = 250;
+        private const int NodeSize = 30;
 
-    private bool _isStartSet;
-    private bool _isEndSet;
+    private static readonly IEnumerable<(NodeState states, string name)> NodeStates = new[]
+    {
+        (NodeState.Wall, "Wall Node"),
+        (NodeState.Empty, "Empty Node"),
+        (NodeState.Start, "Start Node"),
+        (NodeState.End, "End Node"),
+        (NodeState.Open, "Open Node"),
+        (NodeState.Closed, "Close Node"),
+        (NodeState.Path, "Path Node")
+    };
+    
+    private Grid? _grid;
+    private IPathfinder? _pathfinder;
 
-    private int _stepDelay = 75;
+    private Node? _start;
+    private Node? _end;
 
-    private Node[][] _grid;
-    private (int X, int Y) _start;
-    private (int X, int Y) _end;
+    private bool _mouseDown;
+    private bool _clearWalls;
+    private bool _debugMode;
+
+    private DelaySpeed _delayMilliseconds = DelaySpeed.Fast;
+    
+    private bool _isRunning;
 
     protected override async Task OnInitializedAsync()
     {
         var dimensions = await _jsRuntime.InvokeAsync<WindowDimensions>("getDimensions");
-        _rows = (dimensions.Height - 200) / 35;
-        _columns = (dimensions.Width - 100) / 35;
+        var rows = (dimensions.Height - MarginYPixels) / NodeSize;
+        var columns = (dimensions.Width - MarginXPixels) / NodeSize;
 
-        SetUpGrid();
+        _grid = Grid.CreateGrid(rows, columns);
+
+        var row = rows / 2;
+
+        var startNodeCol = columns / 3;
+        _start = _grid[row][startNodeCol];      // set start node
+        _start.State = NodeState.Start; 
+
+        var endNodeCol = columns / 3 * 2;
+        _end = _grid[row][endNodeCol];          // set end node
+        _end.State = NodeState.End;
     }
 
-    private void SetUpGrid()
+    private static string NodeStyleFunc(NodeState state)
     {
-        _grid = new Node[_rows][];
-        for (var row = 0; row < _rows; row++)
+        return "background: " +  state switch {
+            NodeState.Empty => "#fff",
+            NodeState.Wall => "#023047",
+            NodeState.Path => "#219ebc",
+            NodeState.Start => "#90be6d",
+            NodeState.End => "#e63946",
+            NodeState.Open => "#ffc300",
+            NodeState.Closed => "#ff9b54",
+            _ => throw new ArgumentOutOfRangeException(nameof(state))};
+    }
+
+    private void ToggleNode(Node node)
+    {
+        if (node.State is NodeState.Start or NodeState.End) return;
+        
+        node.State = _clearWalls ? NodeState.Empty : NodeState.Wall;
+    }
+
+    private void OnMouseDown(Node node)
+    {
+        _mouseDown = true;
+        
+        if (_isRunning) return;
+        ToggleNode(node);
+    }
+
+    private void OnMouseEnter(Node node)
+    {
+        if (!_mouseDown || _isRunning) return;
+        ToggleNode(node);
+    }
+
+    private void OnMouseUp()
+    {
+        _mouseDown = false;
+    }
+
+    private int _count = 0;
+    private int _magic = 20;
+
+    private async Task Visualize()
+    {
+        if (_start is null || _end is null || _grid is null) return;
+        
+        _isRunning = true;
+        _pathfinder = new AStar(_grid)
         {
-            _grid[row] = new Node[_columns];
-            for (var col = 0; col < _columns; col++)
-            {
-                _grid[row][col] = new Node
-                {
-                    Position = (col, row),
-                    State = NodeState.Empty
-                };
-                _grid[row][col].ObservedState += StateChanged;
-            }
-        }
-
-        _start = (_columns / 3, _rows / 2);
-        _grid[_start.Y][_start.X].State = NodeState.Start;
-        _isStartSet = true;
-
-        _end = (_columns / 3 * 2, _rows / 2);
-        _grid[_end.Y][_end.X].State = NodeState.End;
-        _isEndSet = true;
-    }
-
-    private void ClearPath()
-    {
-        Node[][] newGrid = new Node[_rows][];
-        for (var row = 0; row < _rows; row++)
-        {
-            newGrid[row] = new Node[_columns];
-            for (var col = 0; col < _columns; col++)
-            {
-                NodeState newState;
-                switch (_grid[row][col].State)
-                {
-                    case NodeState.Wall:
-                    case NodeState.Start:
-                    case NodeState.End:
-                        newState = _grid[row][col].State;
-                        break;
-                    default:
-                        newState = NodeState.Empty;
-                        break;
-                }
-                newGrid[row][col] = new Node
-                {
-                    Position = (col, row),
-                    State = newState
-                };
-                newGrid[row][col].ObservedState += StateChanged;
-            }
-        }
-        _grid = newGrid;
-    }
-
-    private void StateChanged(NodeState newState)
-    {
-        Task.Run(async () => await InvokeAsync(StateHasChanged));
-    }
-
-    private async Task Start()
-    {
-        AStar algorithm = new()
-        {
-            Grid = _grid,
-            Delay = _stepDelay
+            IncludePathIntoSteps = false
         };
 
-        var path = await algorithm.FindPathAsync(
-            _grid[_start.Y][_start.X],
-            _grid[_end.Y][_end.X]
-            );
+        var path = _pathfinder.FindPath(_start, _end);
+
+        var l = _pathfinder.Steps.Count;
+        Console.WriteLine(l);
+        var delay = l / _magic;
+        while (_pathfinder.Steps.Any())
+        {
+            var node = _pathfinder.Steps.Dequeue();
+
+            _grid?.UpdateNode(node.Position, node);
+
+            if (_delayMilliseconds == 0) continue;
+            
+            if (_count++ < _magic) continue;
+            if (_count >= _magic) _count = 0;
+            await InvokeAsync(StateHasChanged);
+            await Task.Delay((int)delay);
+        }
+        
+        while (path.Any())
+        {
+            var node = path.Pop();
+            node.State = NodeState.Path;
+            _grid?.UpdateNode(node.Position, node);
+
+            if (_delayMilliseconds == 0) continue;
+            
+            await InvokeAsync(StateHasChanged);
+            await Task.Delay((int)delay);
+        }
+
+        _isRunning = false;
+        await InvokeAsync(StateHasChanged);
     }
 
-    private void Toggle(Node node)
+    private void Clear()
     {
-        if (!_isStartSet)
-        {
-            _isStartSet = node.SetStart();
-            _start = node.Position;
-            return;
-        }
-
-        if (!_isEndSet)
-        {
-            _isEndSet = node.SetEnd();
-            _end = node.Position;
-            return;
-        }
-
-        switch (node.State)
-        {
-            case NodeState.Start:
-                _isStartSet = false;
-                break;
-            case NodeState.End:
-                _isEndSet = false;
-                break;
-        }
-        node.Toggle();
+        if (_isRunning) return;
+        
+        _grid?.Clear();
     }
-
 }
