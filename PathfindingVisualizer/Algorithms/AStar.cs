@@ -7,12 +7,13 @@ public class AStar : IPathfinder
     private Grid Grid { get; }
     public bool IncludePathIntoSteps { get; set; } = true;
     public Queue<Node> Steps { get; }   // Used for visualizing the steps of the algorithm 
-    public AStar(Grid grid) // use a copy
+    public AStar(Grid grid)
     {
         Grid = grid.Clone();
         Steps = new Queue<Node>();
     }
     
+    //TODO: improve the algorithm with a priority queue
     public Stack<Node> FindPath(Node start, Node end)
     {
         var openList = new List<Node>();

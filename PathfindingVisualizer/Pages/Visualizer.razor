@@ -3,14 +3,14 @@
 @using PathfindingVisualizer.Models
 @using PathfindingVisualizer.Algorithms
 
-@inject IJSRuntime _jsRuntime
+@inject IJSRuntime JsRuntime
 
 <PageTitle>Visualizer</PageTitle>
 
 <div class="d-flex flex-column gap-4 justify-center @(_isRunning ? "cursor-wait" : string.Empty)">
     @if (NodeStates.Any())
     {
-        <MudPaper Class="d-flex flex-row flex-wrap justify-center gap-4 pa-4" Elevation="0">
+        <MudPaper Class="d-flex flex-row flex-wrap justify-center gap-4 pa-2" Elevation="0">
             @foreach (var (state, name) in NodeStates)
             {
                 <div class="d-flex flex-row align-content-center gap-2">
@@ -30,7 +30,7 @@
                 <div class="d-flex flex-row justify-center">
                     @foreach (var node in row)
                     {
-                            @* TODO: Add EventUtil.AsNonRenderingEventHandler<MouseEventArgs>  *@
+                        @* TODO: Add EventUtil.AsNonRenderingEventHandler<MouseEventArgs>  *@
                         <div class="node d-flex flex-column" style="@NodeStyleFunc(node.State)"
                              @onmousedown="() => OnMouseDown(node)"
                              @onmouseenter="() => OnMouseEnter(node)"
@@ -49,22 +49,18 @@
         </MudPaper>
     }
     
-    <MudPaper Class="d-flex flex-row flex-wrap justify-center align-center gap-8 pa-4" Elevation="0" Outlined="true">
+    <MudPaper Class="d-flex flex-row flex-wrap justify-center align-center gap-6 pa-2" Elevation="0" Outlined="true">
         
         <MudButton Variant="Variant.Text" Color="Color.Primary">Algorithm</MudButton>
         <MudButton @onclick="Visualize" Variant="Variant.Filled" Color="Color.Primary">Visualize</MudButton>
         <MudButton @onclick="Clear" Variant="Variant.Text" Color="Color.Primary">Clear</MudButton>
-        
-         <MudPaper MaxWidth="200px" Elevation="0">
-             <MudSlider  @bind-Value="_magic" Min="1" Max="21" Step="10" Color="Color.Info">Speed: @_magic</MudSlider>
-        </MudPaper>
-        
+
         <MudPaper MaxWidth="150px" Elevation="0">
-            <MudSelect Margin="Margin.Dense" @bind-Value="_delayMilliseconds" Label="Speed" Variant="Variant.Outlined">
-                <MudSelectItem Value="@DelaySpeed.Instant">@DelaySpeed.Instant</MudSelectItem>
-                <MudSelectItem Value="@DelaySpeed.Fast">@DelaySpeed.Fast</MudSelectItem>
-                <MudSelectItem Value="@DelaySpeed.Average">@DelaySpeed.Average</MudSelectItem>
-                <MudSelectItem Value="@DelaySpeed.Slow">@DelaySpeed.Slow</MudSelectItem>
+            <MudSelect Margin="Margin.Dense" @bind-Value="_stepsPerRender" Label="Speed" Variant="Variant.Outlined">
+                <MudSelectItem Value="0">Instant</MudSelectItem>
+                <MudSelectItem Value="21">Fast</MudSelectItem>
+                <MudSelectItem Value="11">Average</MudSelectItem>
+                <MudSelectItem Value="1">Slow</MudSelectItem>
             </MudSelect>
         </MudPaper>
         
@@ -105,17 +101,19 @@
     private Node? _start;
     private Node? _end;
 
+    private Node? _dragNode;
     private bool _mouseDown;
     private bool _clearWalls;
     private bool _debugMode;
 
-    private DelaySpeed _delayMilliseconds = DelaySpeed.Fast;
+    private int _stepsCount;
+    private int _stepsPerRender = 21;
     
     private bool _isRunning;
 
     protected override async Task OnInitializedAsync()
     {
-        var dimensions = await _jsRuntime.InvokeAsync<WindowDimensions>("getDimensions");
+        var dimensions = await JsRuntime.InvokeAsync<WindowDimensions>("getDimensions");
         var rows = (dimensions.Height - MarginYPixels) / NodeSize;
         var columns = (dimensions.Width - MarginXPixels) / NodeSize;
 
@@ -134,7 +132,7 @@
 
     private static string NodeStyleFunc(NodeState state)
     {
-        return "background: " +  state switch {
+        var color = state switch {
             NodeState.Empty => "#fff",
             NodeState.Wall => "#023047",
             NodeState.Path => "#219ebc",
@@ -143,6 +141,8 @@
             NodeState.Open => "#ffc300",
             NodeState.Closed => "#ff9b54",
             _ => throw new ArgumentOutOfRangeException(nameof(state))};
+
+        return $"background: {color};" + (state is NodeState.Wall ? $"outline: 1px solid {color};" : string.Empty);
     }
 
     private void ToggleNode(Node node)
@@ -157,26 +157,58 @@
         _mouseDown = true;
         
         if (_isRunning) return;
+
+        if (node.State is NodeState.Start or NodeState.End)
+        {
+            _dragNode = node;
+        }
+        
         ToggleNode(node);
     }
 
     private void OnMouseEnter(Node node)
     {
         if (!_mouseDown || _isRunning) return;
+
+        if (_dragNode is not null)
+        {
+            var (row, col) = _dragNode.Position;
+            (_grid![row][col].State, node.State) = (node.State, _grid![row][col].State);
+            _dragNode = node;
+            return;
+        }
+        
         ToggleNode(node);
     }
 
     private void OnMouseUp()
     {
+        if (_dragNode is not null)
+        {
+            switch (_dragNode.State)
+            {
+                case NodeState.Start:
+                    _start = _dragNode;
+                    break;
+                case NodeState.End:
+                    _end = _dragNode;
+                    break;
+            }
+            _dragNode = null;
+        }
+        
         _mouseDown = false;
     }
-
-    private int _count = 0;
-    private int _magic = 20;
 
     private async Task Visualize()
     {
         if (_start is null || _end is null || _grid is null) return;
+
+        if (_mouseDown)
+        {
+            
+            return;
+        }
         
         _isRunning = true;
         _pathfinder = new AStar(_grid)
@@ -186,21 +218,14 @@
 
         var path = _pathfinder.FindPath(_start, _end);
 
-        var l = _pathfinder.Steps.Count;
-        Console.WriteLine(l);
-        var delay = l / _magic;
+        var totalSteps = _pathfinder.Steps.Count;
         while (_pathfinder.Steps.Any())
         {
             var node = _pathfinder.Steps.Dequeue();
 
             _grid?.UpdateNode(node.Position, node);
 
-            if (_delayMilliseconds == 0) continue;
-            
-            if (_count++ < _magic) continue;
-            if (_count >= _magic) _count = 0;
-            await InvokeAsync(StateHasChanged);
-            await Task.Delay((int)delay);
+            await DelayIfNeeded(totalSteps);
         }
         
         while (path.Any())
@@ -209,14 +234,23 @@
             node.State = NodeState.Path;
             _grid?.UpdateNode(node.Position, node);
 
-            if (_delayMilliseconds == 0) continue;
-            
             await InvokeAsync(StateHasChanged);
-            await Task.Delay((int)delay);
+            await Task.Delay(50);
         }
 
         _isRunning = false;
         await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task DelayIfNeeded(int totalSteps)
+    {
+        if (_stepsPerRender == 0) return;    
+            
+        if (_stepsCount++ < _stepsPerRender) return;
+        
+        if (_stepsCount >= _stepsPerRender) _stepsCount = 0;
+        await InvokeAsync(StateHasChanged);
+        await Task.Delay(totalSteps / _stepsPerRender);
     }
 
     private void Clear()
