@@ -66,7 +66,7 @@ public class Grid
     {
         var (row, col) = position;
         var node = _grid[row][col];
-
+        
         node.DistanceToTarget = newNode.DistanceToTarget;
         node.Cost = newNode.Cost;
         node.Parent = node.Parent;
